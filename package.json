@@ -1,0 +1,11 @@
+{
+  "name": "signspeak",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Point a camera at someone signing and hear the translation.",
+  "type": "module",
+  "scripts": {
+    "start": "npx serve .",
+    "check": "node --check js/app.js && node --check js/camera.js && node --check js/hands.js && node --check js/features.js && node --check js/fingerspell.js && node --check js/knn.js && node --check js/speech.js && node --check js/ai.js && node --check api/interpret.js"
+  }
+}

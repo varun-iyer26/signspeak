@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>SignSpeak</title>
+  <meta name="description" content="Point your camera at someone signing and SignSpeak shows the translation as text and speaks it aloud.">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="color-scheme" content="dark">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="icon.svg" alt="" width="32" height="32">
+      <h1>SignSpeak</h1>
+    </div>
+    <div class="topbar-actions">
+      <button id="muteBtn" class="icon-btn" type="button" aria-pressed="false" aria-label="Mute speech" title="Mute speech">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path id="muteIcon" fill="currentColor" d="M3 10v4h4l5 4V6L7 10H3zm13.5 2a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>
+      </button>
+      <button id="settingsBtn" class="icon-btn" type="button" aria-label="Settings" title="Settings">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6a.5.5 0 0 0 .1-.6l-2-3.5a.5.5 0 0 0-.6-.2l-2.5 1a7.4 7.4 0 0 0-1.7-1l-.4-2.6a.5.5 0 0 0-.5-.4h-4a.5.5 0 0 0-.5.4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1a.5.5 0 0 0-.6.2l-2 3.5a.5.5 0 0 0 .1.6L4.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6a.5.5 0 0 0-.1.6l2 3.5c.1.2.4.3.6.2l2.5-1c.5.4 1.1.7 1.7 1l.4 2.6c0 .2.2.4.5.4h4c.3 0 .5-.2.5-.4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.5 1c.2.1.5 0 .6-.2l2-3.5a.5.5 0 0 0-.1-.6L19.4 13zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="statusbar" role="status" aria-label="Status">
+    <span class="pill" id="pillModel" data-state="warn"><i></i><span>Hand model: loading</span></span>
+    <span class="pill" id="pillCamera" data-state="idle"><i></i><span>Camera: off</span></span>
+    <span class="pill" id="pillBackend" data-state="idle"><i></i><span>AI backend: checking</span></span>
+  </div>
+
+  <main class="layout">
+    <section class="stage-wrap" aria-label="Camera view">
+      <div class="stage" id="stage">
+        <video id="video" playsinline muted autoplay></video>
+        <canvas id="overlay"></canvas>
+        <span class="badge" id="handBadge">No hands</span>
+        <button id="flipBtn" class="fab" type="button" aria-label="Switch camera" title="Switch camera" hidden>
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M20 5h-3.2L15 3H9L7.2 5H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm-8 13a5 5 0 0 1-4.6-3H9v-2H4v5h2v-1.7A7 7 0 0 0 12 19a7 7 0 0 0 6.6-4.7l-1.9-.6A5 5 0 0 1 12 18zm0-10a5 5 0 0 1 4.6 3H15v2h5V8h-2v1.7A7 7 0 0 0 12 7a7 7 0 0 0-6.6 4.7l1.9.6A5 5 0 0 1 12 8z"/></svg>
+        </button>
+        <div class="card" id="stageCard" hidden>
+          <h2 id="cardTitle">Start the camera</h2>
+          <p id="cardText"></p>
+          <button id="cardBtn" class="btn primary" type="button">Start camera</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="tabs" role="tablist" aria-label="Recognition mode">
+        <button class="tab" role="tab" id="tab-fingerspell" aria-controls="panel-fingerspell" aria-selected="true" data-mode="fingerspell" type="button">Fingerspell</button>
+        <button class="tab" role="tab" id="tab-custom" aria-controls="panel-custom" aria-selected="false" tabindex="-1" data-mode="custom" type="button">Custom signs</button>
+        <button class="tab" role="tab" id="tab-ai" aria-controls="panel-ai" aria-selected="false" tabindex="-1" data-mode="ai" type="button">AI interpret</button>
+      </div>
+
+      <div class="tabpanel" role="tabpanel" id="panel-fingerspell" aria-labelledby="tab-fingerspell">
+        <p class="hint">Spell in the ASL alphabet (A to Y, no J). Hold each letter steady for about half a second. Pause for a moment to add a space; pause longer to hear the sentence.</p>
+      </div>
+
+      <div class="tabpanel" role="tabpanel" id="panel-custom" aria-labelledby="tab-custom" hidden>
+        <p class="hint">Teach your own signs. Type a label, then hold Record while you make the sign (about 2 seconds).</p>
+        <label class="field-label" for="signLabel">Sign label</label>
+        <div class="row">
+          <input id="signLabel" type="text" maxlength="40" placeholder="e.g. Thank you" autocomplete="off" enterkeyhint="done">
+          <button id="recordBtn" class="btn record" type="button">
+            <span class="rec-fill" id="recFill"></span>
+            <span class="rec-text" id="recText">Hold to record</span>
+          </button>
+        </div>
+        <p id="recordMsg" class="hint" role="status"></p>
+        <ul id="signList" class="sign-list" aria-label="Saved signs"></ul>
+        <div class="row wrap">
+          <button id="exportBtn" class="btn" type="button">Export JSON</button>
+          <button id="importBtn" class="btn" type="button">Import JSON</button>
+          <input id="importFile" type="file" accept="application/json,.json" hidden>
+        </div>
+      </div>
+
+      <div class="tabpanel" role="tabpanel" id="panel-ai" aria-labelledby="tab-ai" hidden>
+        <p class="hint">Sign a phrase, then lower your hands. After a one second pause, SignSpeak sends a few small frames to Claude and speaks the result. This mode needs a backend or your own API key (see Settings).</p>
+        <div class="row wrap">
+          <button id="interpretBtn" class="btn primary" type="button">Interpret now</button>
+          <span class="hint" id="aiFrames">0 frames</span>
+        </div>
+        <p id="aiStatus" class="hint" role="status"></p>
+      </div>
+
+      <section class="transcript-card" aria-label="Transcript">
+        <div class="guess">
+          <span class="muted">Current guess</span>
+          <strong id="guessLabel">-</strong>
+          <span class="muted" id="guessPct"></span>
+        </div>
+        <div class="meter" id="guessMeter" role="meter" aria-label="Guess confidence" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="guessBar"></div></div>
+        <div id="transcript" class="transcript" aria-live="polite" aria-label="Transcript" data-placeholder="Your translation will appear here"></div>
+        <div class="actions">
+          <button id="speakBtn" class="btn primary" type="button">Speak</button>
+          <button id="spaceBtn" class="btn" type="button">Space</button>
+          <button id="backBtn" class="btn" type="button">Backspace</button>
+          <button id="clearBtn" class="btn" type="button">Clear</button>
+          <button id="copyBtn" class="btn" type="button">Copy</button>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="settingsDialog" aria-labelledby="settingsTitle">
+    <form method="dialog" class="settings" id="settingsForm">
+      <h2 id="settingsTitle">Settings</h2>
+
+      <fieldset>
+        <legend>AI interpret</legend>
+        <label class="field-label" for="setEndpoint">AI endpoint URL</label>
+        <input id="setEndpoint" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="/api/interpret">
+        <label class="field-label" for="setKey">Anthropic API key (optional, direct mode)</label>
+        <input id="setKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-...">
+        <p class="hint">Stored only in this browser's localStorage. When set, requests go straight from this page to api.anthropic.com instead of the endpoint above.</p>
+        <label class="field-label" for="setModel">Model (direct mode)</label>
+        <input id="setModel" type="text" autocomplete="off" spellcheck="false" placeholder="claude-haiku-5-5">
+      </fieldset>
+
+      <fieldset>
+        <legend>Speech</legend>
+        <label class="field-label" for="setVoice">Voice</label>
+        <select id="setVoice"><option value="">Default voice</option></select>
+        <label class="field-label" for="setRate">Rate: <output id="rateOut">1.0</output>x</label>
+        <input id="setRate" type="range" min="0.5" max="2" step="0.1" value="1">
+        <label class="check"><input id="setMute" type="checkbox"> Mute speech</label>
+        <button id="testVoiceBtn" class="btn" type="button">Test voice</button>
+      </fieldset>
+
+      <div class="row end">
+        <button id="settingsClose" class="btn primary" value="close">Done</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <noscript><p class="noscript">SignSpeak needs JavaScript.</p></noscript>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
