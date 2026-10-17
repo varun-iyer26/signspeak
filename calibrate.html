@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>SignSpeak glove calibration</title>
+  <meta name="description" content="Record paired webcam hand landmarks and glove sensor data for calibrating the SignSpeak glove.">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/calibrate.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="icon.svg" alt="" width="32" height="32">
+      <h1>Glove calibration</h1>
+    </div>
+    <a class="btn small" href="./">Back to SignSpeak</a>
+  </header>
+
+  <div class="statusbar" role="status" aria-label="Status">
+    <span class="pill" id="pillVideo" data-state="idle"><i></i><span>Video: off</span></span>
+    <span class="pill" id="pillGlove" data-state="idle"><i></i><span>Gloves: 0</span></span>
+    <span class="pill" id="pillRec" data-state="idle"><i></i><span>Not recording</span></span>
+  </div>
+
+  <main class="layout">
+    <section class="stage-wrap" aria-label="Camera view">
+      <div class="stage" id="stage">
+        <video id="video" playsinline muted autoplay></video>
+        <canvas id="overlay"></canvas>
+        <span class="badge" id="handBadge">No hands</span>
+        <div class="card" id="stageCard">
+          <h2>Paired glove + webcam recording</h2>
+          <p>Start the video, connect the glove, then run the steps. Everything is recorded on one clock and saved as a single JSON file.</p>
+          <button id="cardBtn" class="btn primary" type="button">Start video</button>
+        </div>
+        <div class="prompt" id="prompt" hidden aria-live="polite">
+          <div class="prompt-kicker" id="promptKicker"></div>
+          <div class="prompt-title" id="promptTitle"></div>
+          <div class="prompt-count" id="promptCount"></div>
+          <div class="prompt-cue" id="promptCue"></div>
+          <div class="prompt-text" id="promptText"></div>
+        </div>
+      </div>
+      <p class="hint" id="counters">0 s · 0 frames</p>
+    </section>
+
+    <section class="panel">
+      <div class="tabpanel">
+        <h2 class="section">1 · Sources</h2>
+        <label class="field-label" for="videoSource">Video</label>
+        <div class="row">
+          <select id="videoSource">
+            <option value="webcam">Webcam + MediaPipe</option>
+            <option value="synthetic">Synthetic hand (no camera)</option>
+          </select>
+          <button id="startVideoBtn" class="btn" type="button">Start</button>
+        </div>
+        <label class="field-label" for="gloveHand">Glove</label>
+        <div class="row wrap tight">
+          <select id="gloveHand" class="narrow" aria-label="Hand for the next glove">
+            <option value="Right">Right hand</option>
+            <option value="Left">Left hand</option>
+          </select>
+          <button id="bleBtn" class="btn primary" type="button">Connect glove (BLE)</button>
+          <button id="mockBtn" class="btn" type="button">Add mock glove</button>
+        </div>
+        <p class="hint" id="bleHint">A glove named …-L or …-R picks its hand from the name; otherwise the hand selected here is used.</p>
+        <ul class="glove-list" id="gloveList" aria-label="Gloves"></ul>
+        <label class="field-label" for="wearerId">Wearer</label>
+        <div class="row">
+          <input id="wearerId" type="text" placeholder="Name or initials" autocomplete="off">
+          <select id="dominantHand" class="narrow" aria-label="Dominant hand">
+            <option value="Right">Right-handed</option>
+            <option value="Left">Left-handed</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="tabpanel">
+        <h2 class="section">2 · Calibration steps</h2>
+        <p class="hint">About 5 minutes each time the glove goes on. Running a step again adds another segment; the loader uses the latest.</p>
+        <ol class="step-list" id="stepList"></ol>
+        <label class="field-label" for="freeSeconds">Free-motion length (seconds, 60–120 recommended)</label>
+        <input id="freeSeconds" type="number" min="30" max="180" step="10" value="90">
+        <div class="row wrap">
+          <button id="runAllBtn" class="btn primary" type="button">Run steps 0–4</button>
+          <button id="skipBtn" class="btn" type="button" disabled>Skip</button>
+          <button id="cancelBtn" class="btn" type="button" disabled>Stop steps</button>
+        </div>
+      </div>
+
+      <div class="tabpanel">
+        <h2 class="section">3 · Sign repetitions (step 5)</h2>
+        <label class="field-label" for="signLabel">Sign label</label>
+        <input id="signLabel" type="text" placeholder="e.g. HELLO" autocomplete="off">
+        <div class="row wrap">
+          <label class="inline">Reps <input id="signReps" type="number" min="1" max="10" value="5"></label>
+          <label class="inline">Seconds each <input id="signSeconds" type="number" min="1" max="10" step="0.5" value="3"></label>
+          <button id="signBtn" class="btn primary" type="button">Record sign</button>
+        </div>
+        <ul class="sign-done" id="signDone" aria-label="Recorded signs"></ul>
+      </div>
+
+      <div class="tabpanel">
+        <h2 class="section">4 · Recording</h2>
+        <p class="hint">Running a step starts recording automatically. Load the file with <code>python3 research/load_capture.py file.json</code>.</p>
+        <div class="row wrap">
+          <button id="recBtn" class="btn" type="button">Start recording</button>
+          <button id="exportBtn" class="btn primary" type="button" disabled>Export JSON</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script type="module" src="js/calibrate.js"></script>
+</body>
+</html>
