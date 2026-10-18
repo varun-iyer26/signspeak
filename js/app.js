@@ -4,7 +4,7 @@ import { HandTracker } from './hands.js';
 import { buildFeatureVector } from './features.js';
 import { classifyLetter } from './fingerspell.js';
 import { KnnClassifier } from './knn.js';
-import { Speech } from './speech.js';
+import { Speech, DEFAULT_VOICE_ID, DEFAULT_MODEL_ID, DEFAULT_TTS_ENDPOINT, TTS_MODELS } from './speech.js';
 import { FrameBuffer, interpretFrames, checkBackend, DEFAULT_ENDPOINT } from './ai.js';
 
 // ---- tuning constants ------------------------------------------------------
@@ -29,7 +29,19 @@ const $ = (id) => document.getElementById(id);
 // ---- settings (localStorage, every access wrapped) ---------------------------
 
 const SETTINGS_KEY = 'signspeak.settings.v1';
-const DEFAULT_SETTINGS = { endpoint: DEFAULT_ENDPOINT, apiKey: '', model: '', voiceURI: '', rate: 1, muted: false };
+const DEFAULT_SETTINGS = {
+  endpoint: DEFAULT_ENDPOINT,
+  apiKey: '',
+  model: '',
+  engine: 'elevenlabs',
+  voiceId: DEFAULT_VOICE_ID,
+  ttsModel: DEFAULT_MODEL_ID,
+  elevenKey: '',
+  ttsEndpoint: DEFAULT_TTS_ENDPOINT,
+  voiceURI: '',
+  rate: 1,
+  muted: false,
+};
 
 function loadSettings() {
   try {
@@ -38,6 +50,11 @@ function loadSettings() {
     if (typeof stored.endpoint === 'string') s.endpoint = stored.endpoint;
     if (typeof stored.apiKey === 'string') s.apiKey = stored.apiKey;
     if (typeof stored.model === 'string') s.model = stored.model;
+    if (stored.engine === 'elevenlabs' || stored.engine === 'browser') s.engine = stored.engine;
+    if (typeof stored.voiceId === 'string' && stored.voiceId) s.voiceId = stored.voiceId;
+    if (TTS_MODELS.includes(stored.ttsModel)) s.ttsModel = stored.ttsModel;
+    if (typeof stored.elevenKey === 'string') s.elevenKey = stored.elevenKey;
+    if (typeof stored.ttsEndpoint === 'string' && stored.ttsEndpoint) s.ttsEndpoint = stored.ttsEndpoint;
     if (typeof stored.voiceURI === 'string') s.voiceURI = stored.voiceURI;
     if (Number.isFinite(stored.rate)) s.rate = Math.min(2, Math.max(0.5, stored.rate));
     s.muted = stored.muted === true;
@@ -67,9 +84,22 @@ const speech = new Speech();
 const knn = new KnnClassifier({ k: 5 });
 const frames = new FrameBuffer({ max: 8, width: 384, intervalMs: 333 });
 
+/** Copy the voice settings onto the speech object and forget any earlier ElevenLabs failure. */
+function applySpeechSettings() {
+  speech.engine = settings.engine;
+  speech.voiceId = settings.voiceId;
+  speech.modelId = settings.ttsModel;
+  speech.apiKey = settings.elevenKey;
+  speech.endpoint = settings.ttsEndpoint;
+  speech.reset();
+}
+
+applySpeechSettings();
 speech.voiceURI = settings.voiceURI;
 speech.rate = settings.rate;
 speech.muted = settings.muted;
+speech.onFallback = (message) => toast(message);
+speech.onStatusChange = () => renderVoicePill();
 knn.load();
 
 const state = {
@@ -234,6 +264,13 @@ function renderCameraPill() {
   else if (state.cam === 'starting') setPill('pillCamera', 'warn', 'Camera: starting');
   else if (state.cam === 'error') setPill('pillCamera', 'err', 'Camera: unavailable');
   else setPill('pillCamera', 'idle', 'Camera: off');
+}
+
+function renderVoicePill() {
+  const voice = speech.activeVoice;
+  if (voice === 'elevenlabs') setPill('pillVoice', 'ok', 'Voice: ElevenLabs');
+  else if (voice === 'fallback') setPill('pillVoice', 'warn', 'Voice: browser fallback');
+  else setPill('pillVoice', 'idle', 'Voice: browser');
 }
 
 let backendTimer = 0;
@@ -727,7 +764,19 @@ function renderVoices(voices) {
   select.value = settings.voiceURI;
 }
 
+/** Show the ElevenLabs fields only for that engine; the browser voice is the fallback otherwise. */
+function renderEngineFields() {
+  $('elevenFields').hidden = settings.engine !== 'elevenlabs';
+  $('voiceLabel').textContent = settings.engine === 'elevenlabs' ? 'Fallback voice' : 'Voice';
+}
+
 function fillSettingsForm() {
+  $('setEngine').value = settings.engine;
+  $('setVoiceId').value = settings.voiceId;
+  $('setTtsModel').value = settings.ttsModel;
+  $('setElevenKey').value = settings.elevenKey;
+  $('setTtsEndpoint').value = settings.ttsEndpoint;
+  renderEngineFields();
   $('setEndpoint').value = settings.endpoint;
   $('setKey').value = settings.apiKey;
   $('setModel').value = settings.model;
@@ -759,6 +808,34 @@ $('setModel').addEventListener('input', (e) => {
   settings.model = e.target.value.trim();
   saveSettings();
 });
+$('setEngine').addEventListener('change', (e) => {
+  settings.engine = e.target.value === 'browser' ? 'browser' : 'elevenlabs';
+  speech.cancel();
+  applySpeechSettings();
+  saveSettings();
+  renderEngineFields();
+  renderVoicePill();
+});
+$('setVoiceId').addEventListener('input', (e) => {
+  settings.voiceId = e.target.value.trim() || DEFAULT_VOICE_ID;
+  applySpeechSettings();
+  saveSettings();
+});
+$('setTtsModel').addEventListener('change', (e) => {
+  settings.ttsModel = e.target.value;
+  applySpeechSettings();
+  saveSettings();
+});
+$('setElevenKey').addEventListener('input', (e) => {
+  settings.elevenKey = e.target.value.trim();
+  applySpeechSettings();
+  saveSettings();
+});
+$('setTtsEndpoint').addEventListener('input', (e) => {
+  settings.ttsEndpoint = e.target.value.trim() || DEFAULT_TTS_ENDPOINT;
+  applySpeechSettings();
+  saveSettings();
+});
 $('setVoice').addEventListener('change', (e) => {
   settings.voiceURI = e.target.value;
   speech.voiceURI = settings.voiceURI;
@@ -771,6 +848,7 @@ $('setRate').addEventListener('input', (e) => {
   saveSettings();
 });
 $('testVoiceBtn').addEventListener('click', () => {
+  speech.reset(); // retry ElevenLabs even if it failed recently
   speech.unlock();
   if (!speech.speak('Hello from SignSpeak.', { interrupt: true, force: true })) toast('Speech is not available in this browser.');
 });
@@ -784,6 +862,7 @@ speech.init(renderVoices);
 if (!speech.supported) toast('Speech output is not supported in this browser.');
 renderCameraPill();
 renderModelPill();
+renderVoicePill();
 renderCard();
 refreshBackend();
 loadModel();

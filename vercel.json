@@ -4,6 +4,9 @@
   "functions": {
     "api/interpret.js": {
       "maxDuration": 30
+    },
+    "api/tts.js": {
+      "maxDuration": 30
     }
   }
 }
