@@ -73,6 +73,16 @@ The on-device modes work with any static server. AI mode calls `/api/interpret`,
 
 Run the syntax checks with `npm run check`.
 
+## Glove calibration capture
+
+[`calibrate.html`](calibrate.html) is a separate page for the sensor-glove build. It records webcam hand landmarks and glove data together, so the glove can be calibrated against the camera. Open it from the same local server, for example http://localhost:8000/calibrate.html.
+
+- **What it records:** MediaPipe `worldLandmarks`, normalized landmarks and handedness for every video frame. It also records every BLE sample from each glove, with both the glove's `micros()` timestamp and the browser's receive time. Everything is on the `performance.now()` clock.
+- **Steps:** it walks the wearer through the procedure in [§4 of the research note](docs/research/glove-dataset-alignment.md#4-calibration-procedure-paired-glove--webcam), with a prompt and countdown for each step. The steps are: hold still, flat ↔ fist, three static poses, three sharp twists, free motion, and repetitions of each sign. **Export JSON** saves the whole session as one file.
+- **No hardware needed:** add `?mock=1`, or use **Add mock glove** with the **Synthetic hand** video source. The mock glove produces BLE packets from a synthetic hand with a known mount rotation, clock offset and latency, so the loader can check its estimates.
+- **Firmware contract:** the BLE UUIDs and packet layout are the `GLOVE_CONFIG` object at the top of [`js/calibrate.js`](js/calibrate.js). Web Bluetooth needs Chrome or Edge.
+- **Loading a capture:** run `python3 research/load_capture.py capture.json`. It needs numpy only, and turns the file into arrays. It then runs `keypoints_to_state` and estimates the gyro bias, the glove→camera time lag (`estimate_lag`) and a static R_mount.
+
 ## Deploying
 
 ### GitHub Pages (on-device modes plus direct mode)
