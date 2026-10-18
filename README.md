@@ -93,21 +93,9 @@ Click the **Deploy with Vercel** button at the top of this page, or import the r
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` | Yes | Your Anthropic API key. It stays on the server and is never returned to the browser. |
 | `ANTHROPIC_MODEL` | No | Overrides the model. Defaults to `claude-haiku-5-5`. |
-| `ALLOWED_ORIGIN` | No | The origin allowed to call `/api/interpret` and `/api/tts` through CORS. Defaults to `*`. |
-| `ELEVENLABS_API_KEY` | No (natural voice only) | Your ElevenLabs API key, used by `/api/tts`. It stays on the server. |
-| `ELEVENLABS_VOICE_ID` | No | Default ElevenLabs voice. Defaults to the premade voice "George" (`JBFqnCBsd6RMkjVDRZzb`). |
-| `ELEVENLABS_MODEL_ID` | No | ElevenLabs model. Defaults to `eleven_flash_v2_5`, the low-latency model. |
+| `ALLOWED_ORIGIN` | No | The origin allowed to call `/api/interpret` through CORS. Defaults to `*`. |
 
 The function accepts at most 8 frames, each up to 400 KB of base64, and sets `Access-Control-Allow-Origin` from `ALLOWED_ORIGIN`. It never logs the key or the frames.
-
-## Natural voice (ElevenLabs)
-
-Speech output can use an ElevenLabs voice instead of the browser's built-in voice. It is optional. The server function is `api/tts.js`. It accepts `{ "text", "voiceId"?, "modelId"? }` and returns MP3 audio.
-
-- **On Vercel (key stays on the server):** open **Settings → Environment Variables** in your Vercel project and add `ELEVENLABS_API_KEY`. You can also add `ELEVENLABS_VOICE_ID` and `ELEVENLABS_MODEL_ID` (see the table above). For `vercel dev`, put the same variables in `.env.local` in the project root. Do not commit that file.
-- **On GitHub Pages:** there is no server, so the key cannot be set for the site. Open **Settings** and paste your own ElevenLabs key. It is stored only in your browser.
-- **Fallback:** if ElevenLabs is not configured, or a request fails, the app uses the browser's built-in voice.
-- **Picking a voice:** browse the ElevenLabs Voice Library on elevenlabs.io and copy the ID of a voice you like. Or clone your own voice in ElevenLabs and copy the ID of the result. Set the ID as `ELEVENLABS_VOICE_ID`, or choose it in Settings.
 
 ## Limitations and accuracy
 

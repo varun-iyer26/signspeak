@@ -31,7 +31,6 @@
     <span class="pill" id="pillModel" data-state="warn"><i></i><span>Hand model: loading</span></span>
     <span class="pill" id="pillCamera" data-state="idle"><i></i><span>Camera: off</span></span>
     <span class="pill" id="pillBackend" data-state="idle"><i></i><span>AI backend: checking</span></span>
-    <span class="pill" id="pillVoice" data-state="idle"><i></i><span>Voice: ElevenLabs</span></span>
   </div>
 
   <main class="layout">
@@ -126,27 +125,7 @@
 
       <fieldset>
         <legend>Speech</legend>
-        <label class="field-label" for="setEngine">Voice engine</label>
-        <select id="setEngine">
-          <option value="elevenlabs">ElevenLabs (natural voice)</option>
-          <option value="browser">Browser</option>
-        </select>
-        <div id="elevenFields">
-          <label class="field-label" for="setVoiceId">ElevenLabs voice ID</label>
-          <input id="setVoiceId" type="text" autocomplete="off" spellcheck="false" placeholder="JBFqnCBsd6RMkjVDRZzb">
-          <label class="field-label" for="setTtsModel">ElevenLabs model</label>
-          <select id="setTtsModel">
-            <option value="eleven_flash_v2_5">eleven_flash_v2_5 (fastest)</option>
-            <option value="eleven_turbo_v2_5">eleven_turbo_v2_5</option>
-            <option value="eleven_multilingual_v2">eleven_multilingual_v2</option>
-          </select>
-          <label class="field-label" for="setElevenKey">ElevenLabs API key (optional, direct mode)</label>
-          <input id="setElevenKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk_...">
-          <p class="hint">Stored only in this browser; leave blank to use the server. When set, requests go straight from this page to api.elevenlabs.io instead of the endpoint below.</p>
-          <label class="field-label" for="setTtsEndpoint">TTS endpoint URL</label>
-          <input id="setTtsEndpoint" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="/api/tts">
-        </div>
-        <label class="field-label" for="setVoice" id="voiceLabel">Fallback voice</label>
+        <label class="field-label" for="setVoice">Voice</label>
         <select id="setVoice"><option value="">Default voice</option></select>
         <label class="field-label" for="setRate">Rate: <output id="rateOut">1.0</output>x</label>
         <input id="setRate" type="range" min="0.5" max="2" step="0.1" value="1">
